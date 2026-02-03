@@ -135,6 +135,25 @@ func createBooking(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Invalid Input"})
 	}
 
+	if booking.Customer.Phone != "" {
+		var existingCust Customer
+
+		// Search DB for this phone number
+		if err := db.Where("phone = ?", booking.Customer.Phone).First(&existingCust).Error; err == nil {
+			// SCENARIO A: Customer Found!
+			// We link this new booking to the EXISTING customer's ID
+			booking.CustomerID = existingCust.ID
+
+			// CRITICAL: We must empty the 'Customer' struct.
+			// If we don't, GORM will try to create the customer again and fail
+			// because the phone number must be unique.
+			booking.Customer = Customer{}
+		}
+		// SCENARIO B: Customer Not Found (err != nil)
+		// We do nothing. GORM will see the new Customer data and automatically
+		// create the new customer row for us.
+	}
+
 	// LOGIC: Calculate Item Prices
 	// We must look up the current price of items to set 'PriceAtBooking'
 	var itemsTotal float64 = 0
