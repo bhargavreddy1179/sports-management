@@ -68,8 +68,11 @@ func main() {
 	// dsn = "host=localhost user=postgres password=password dbname=courtdb port=5432 sslmode=disable"
 
 	var err error
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		PrepareStmt: false, // <--- Add this line to disable caching
+	db, err = gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		PreferSimpleProtocol: true, // <--- This is the key fix for Render/Neon
+	}), &gorm.Config{
+		PrepareStmt: false, // Keep this false as well
 	})
 	if err != nil {
 		log.Fatal("Failed to connect to database: ", err)
